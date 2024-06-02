@@ -1,10 +1,9 @@
 import PocketBase from './pocketbase.es.mjs'
+// import Chart from 'chart.js/auto'
 
 const url = 'https://demo-kh.pockethost.io/'
 const client = new PocketBase(url)
 
-let expenseData = []
-let expenseType = []
 
 async function getAllExpenses() {
   const records = await client.collection('expense').getFullList()
@@ -80,9 +79,9 @@ async function displayAllExpenses() {
   wrapper.innerHTML = ``
   for (let i = 0; i < expenses.length; i++) {
     let currentExpense = expenses[i]
-    console.log(currentExpense)
+    // console.log(currentExpense)
     wrapper.innerHTML += `
-    <div class="expenseItem">
+    <div class="expenseItem" data-aos="fade-down" data-aos-delay="${i*500}">
       <p>${new Date(currentExpense.Date).toLocaleDateString()}</p>
       <h4>${currentExpense.Name}</h4>
       <p>$${currentExpense.Amount}</p>
@@ -97,12 +96,84 @@ async function displayAllExpenses() {
 
   deleteExpense()
 
+  await displayChart()
+
 }
 
 
+async function displayChart() {
+
+  const expensesData = [
+    {
+      category: "food",
+      amount: 0
+    },
+    {
+      category: "entertainment",
+      amount: 0
+    },
+    {
+      category: "study",
+      amount: 0
+    },
+    {
+      category: "health",
+      amount: 0
+    }, 
+    {
+      category: "other",
+      amount: 0
+    }
+  ]
+  const expenses = await getAllExpenses()
+  // console.log(expenses)
+  for (let i = 0; i < expenses.length; i++) {
+    let expense = expenses[i]
+    if (expense.Category == "food") {
+      expensesData[0].amount += expense.Amount
+    } else if (expense.Category == "entertainment") {
+      expensesData[1].amount += expense.Amount
+    } else if (expense.Category == "study") {
+      expensesData[2].amount += expense.Amount
+    } else if (expense.Category == "health") {
+      expensesData[3].amount += expense.Amount
+    } else {
+      expensesData[4].amount += expense.Amount
+    }
+  }
+
+  console.log(expensesData)
+  let chartStatus = Chart.getChart("myChart"); // <canvas> id
+  if (chartStatus != undefined) {
+    chartStatus.destroy();
+  }
+  Chart.defaults.color = '#FFF';
+  const ctx = document.querySelector("#myChart")
+
+  let expenseChart = new Chart(ctx)
+  expenseChart.destroy()
+  expenseChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: expensesData.map((object) => object.category),
+      datasets: [{
+        label: 'Amount in $',
+        data: expensesData.map((object) => object.amount),
+        borderWidth: 1
+      }]
+    },
+  })
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
+  AOS.init({
+    delay: 500,
+    duration: 1000
+  })
 
   addNewExpenseForm()
+
   displayAllExpenses()
+
 
 })
